@@ -10,6 +10,8 @@ nevents=$4
 dst_mode=${5:-'splitting'} # 'splitting' or 'single'
 resub_file=${6:-'null'} #file for resubmitting run
 
+echo $resub_file
+
 if [ $do_sub == 1 ]; then
     echo "Grid mode."
     if ! which jobsub_submit &>/dev/null ; then
@@ -25,7 +27,7 @@ else
 fi
 
 #location of the decoded data
-data_dir="/pnfs/e1039/tape_backed/decoded_data"
+data_dir="/pnfs/e1039/scratch/cosmic_decoded_dst"
 
 if [ "$resub_file" = "null" ]; then
 
@@ -55,6 +57,8 @@ for data_path in ${data_path_list[*]} ; do
     
     data_file=$(basename $data_path)
     job_name=${data_file%'.root'}
+    echo $data_file
+    echo $job_name
 
     if [ "$resub_file" = "null" ]; then
 	mkdir -p $work/$job_name/log
@@ -65,6 +69,9 @@ for data_path in ${data_path_list[*]} ; do
     rsync -av $dir_macros/gridrun_data.sh $work/$job_name/gridrun_data.sh
 
     if [ $do_sub == 1 ]; then
+	#cmd="jobsub_submit"
+	#cmd="$cmd -g --OS=SL7 --use_gftp --resource-provides=usage_model=DEDICATED,OPPORTUNISTIC,OFFSITE -e IFDHC_VERSION --expected-lifetime='$LIFE_TIME'"
+	#cmd="$cmd -g --OS=SL7 --use_gftp --resource-provides=usage_model=DEDICATED,OPPORTUNISTIC -e IFDHC_VERSION --expected-lifetime='$LIFE_TIME'"
         cmd="jobsub_submit --grid"
         cmd="$cmd -l '+SingularityImage=\"/cvmfs/singularity.opensciencegrid.org/e1039/e1039-sl7:latest\"'"
         cmd="$cmd --append_condor_requirements='(TARGET.HAS_SINGULARITY=?=true)'"
@@ -83,6 +90,11 @@ for data_path in ${data_path_list[*]} ; do
 	cd $work/$job_name/
 	$work/$job_name/gridrun_data.sh $nevents $run_num $data_file | tee $work/$job_name/log/log.txt
 	cd -
-    fi
+    fi | tee $dir_macros/single_log_gridsub.txt
+   
+    JOBID="$(grep -o '\S*@jobsub\S*' <<< $(tail -2 $dir_macros/single_log_gridsub.txt | head -1))"
+    echo $JOBID
+    echo $job_name
+    paste <(echo "$job_name") <(echo "$JOBID")>>$dir_macros/jobid_info.txt
 
 done 2>&1 | tee $dir_macros/log_gridsub.txt
