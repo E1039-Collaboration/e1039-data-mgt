@@ -20,7 +20,7 @@ if [ $do_sub == 1 ]; then
 	exit
     fi
     work=/pnfs/e1039/persistent/cosmic_recodata/$jobname
-    # ln -sf /pnfs/e906/persistent/cosmic_recodata data
+    
 else
     echo "Local mode."
     work=$dir_macros/scratch/$jobname
@@ -48,9 +48,9 @@ if [ "$resub_file" = "null" ]; then
     fi
 
 else
- 
+    
     data_path_list=( $(find $data_dir -name  $resub_file ) )
-   
+    
 fi #resub_file condition
 
 for data_path in ${data_path_list[*]} ; do
@@ -69,9 +69,6 @@ for data_path in ${data_path_list[*]} ; do
     rsync -av $dir_macros/gridrun_data.sh $work/$job_name/gridrun_data.sh
 
     if [ $do_sub == 1 ]; then
-	#cmd="jobsub_submit"
-	#cmd="$cmd -g --OS=SL7 --use_gftp --resource-provides=usage_model=DEDICATED,OPPORTUNISTIC,OFFSITE -e IFDHC_VERSION --expected-lifetime='$LIFE_TIME'"
-	#cmd="$cmd -g --OS=SL7 --use_gftp --resource-provides=usage_model=DEDICATED,OPPORTUNISTIC -e IFDHC_VERSION --expected-lifetime='$LIFE_TIME'"
         cmd="jobsub_submit --grid"
         cmd="$cmd -l '+SingularityImage=\"/cvmfs/singularity.opensciencegrid.org/e1039/e1039-sl7:latest\"'"
         cmd="$cmd --append_condor_requirements='(TARGET.HAS_SINGULARITY=?=true)'"
@@ -91,10 +88,10 @@ for data_path in ${data_path_list[*]} ; do
 	$work/$job_name/gridrun_data.sh $nevents $run_num $data_file | tee $work/$job_name/log/log.txt
 	cd -
     fi | tee $dir_macros/single_log_gridsub.txt
-   
-    JOBID="$(grep -o '\S*@jobsub\S*' <<< $(tail -2 $dir_macros/single_log_gridsub.txt | head -1))"
+    
+    JOBID="$(tail -2 $dir_macros/single_log_gridsub.txt | head -1 | grep -o '\S*@jobsub\S*')"
     echo $JOBID
     echo $job_name
-    paste <(echo "$job_name") <(echo "$JOBID")>>$dir_macros/jobid_info.txt
+    echo  "$job_name $JOBID" >>$dir_macros/jobid_info.txt
 
 done 2>&1 | tee $dir_macros/log_gridsub.txt
