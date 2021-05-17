@@ -10,6 +10,8 @@ nevents=$4
 dst_mode=${5:-'splitting'} # 'splitting' or 'single'
 resub_file=${6:-'null'} #file for resubmitting run
 
+echo $resub_file
+
 if [ $do_sub == 1 ]; then
     echo "Grid mode."
     if ! which jobsub_submit &>/dev/null ; then
@@ -18,14 +20,14 @@ if [ $do_sub == 1 ]; then
 	exit
     fi
     work=/pnfs/e1039/persistent/cosmic_recodata/$jobname
-    # ln -sf /pnfs/e906/persistent/cosmic_recodata data
+    
 else
     echo "Local mode."
     work=$dir_macros/scratch/$jobname
 fi
 
 #location of the decoded data
-data_dir="/pnfs/e1039/tape_backed/decoded_data"
+data_dir="/pnfs/e1039/scratch/cosmic_decoded_dst"
 
 if [ "$resub_file" = "null" ]; then
 
@@ -46,15 +48,17 @@ if [ "$resub_file" = "null" ]; then
     fi
 
 else
- 
+    
     data_path_list=( $(find $data_dir -name  $resub_file ) )
-   
+    
 fi #resub_file condition
 
 for data_path in ${data_path_list[*]} ; do
     
     data_file=$(basename $data_path)
     job_name=${data_file%'.root'}
+    echo $data_file
+    echo $job_name
 
     if [ "$resub_file" = "null" ]; then
 	mkdir -p $work/$job_name/log
@@ -83,6 +87,11 @@ for data_path in ${data_path_list[*]} ; do
 	cd $work/$job_name/
 	$work/$job_name/gridrun_data.sh $nevents $run_num $data_file | tee $work/$job_name/log/log.txt
 	cd -
-    fi
+    fi | tee $dir_macros/single_log_gridsub.txt
+    
+    JOBID="$(tail -2 $dir_macros/single_log_gridsub.txt | head -1 | grep -o '\S*@jobsub\S*')"
+    echo $JOBID
+    echo $job_name
+    echo  "$job_name $JOBID" >>$dir_macros/jobid_info.txt
 
 done 2>&1 | tee $dir_macros/log_gridsub.txt
