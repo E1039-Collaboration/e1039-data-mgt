@@ -20,8 +20,9 @@ case ${run_info} in
 	    
 	    ##no. of splits in corresponding run
   	    N_splits=$(ls /data2/e1039/dst/$run_dir/ | wc -l)
-
+	
   	    reco_status=0
+	    completed_dst=0
 
   	    if [ $N_splits -gt 1 ]; then #choose the runs with more than 1 splits only
   		N_GOOD_LOG=0
@@ -43,8 +44,10 @@ case ${run_info} in
 		if [ $N_splits -eq $N_GOOD_LOG ]; then
 		    reco_status=2
 		fi
+		completed_dst=$N_GOOD_LOG
 	    fi
-	    echo -e "${run_num}\t${N_splits}\t${reco_status}"
+	    echo -e "${range_1st}\t${N_splits}\t${reco_status}\t${completed_dst}"
+	    echo -e "Run number: ${range_1st}\tNo of split DSTs: ${N_splits}\tCompleted DSTs${completed_dst}"
 	done	
 	;;
 
@@ -56,6 +59,7 @@ case ${run_info} in
   	N_splits=$(ls /data2/e1039/dst/$run_dir/ | wc -l)
 
   	reco_status=0
+	completed_dst=0
 
   	if [ $N_splits -gt 1 ]; then #choose the runs with more than 1 splits only
   	    N_GOOD_LOG=0
@@ -75,8 +79,10 @@ case ${run_info} in
 	    if [ $N_splits -eq $N_GOOD_LOG ]; then
 		reco_status=2
 	    fi
+	    completed_dst=$N_GOOD_LOG
 	fi
-	echo -e "${range_1st}\t${N_splits}\t${reco_status}"
+	echo -e "${range_1st}\t${N_splits}\t${reco_status}\t${completed_dst}"
+	echo -e "Run number: ${range_1st}\tNo of split DSTs: ${N_splits}\tCompleted DSTs: ${completed_dst}"
 	;;
 
     ##===============list================================================    
@@ -93,7 +99,7 @@ case ${run_info} in
   	    #echo $N_splits
 
   	    reco_status=0
-
+	    completed_dst=0
   	    if [ $N_splits -gt 1 ]; then #choose the runs with more than 1 splits only
   		N_GOOD_LOG=0
 		reco_status=1
@@ -114,8 +120,10 @@ case ${run_info} in
 		if [ $N_splits -eq $N_GOOD_LOG ]; then
 		    reco_status=2
 		fi
+		completed_dst=$N_GOOD_LOG
 	    fi
-	    echo -e "${run_num}\t${N_splits}\t${reco_status}"
+	    echo -e "${run_num}\t${N_splits}\t${reco_status}\t${completed_dst}"
+	    echo -e "Run number: ${run_num}\tNo of split DSTs: ${N_splits}\tCompleted DSTs: ${completed_dst}"
 	done <$range_1st
 	;;
     #================status info===========================================	
