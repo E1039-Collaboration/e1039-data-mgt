@@ -2,50 +2,58 @@
 #A master script to copy the decoded runs from /data2/ area and run it in grid
 #Author: Abinash pun
 
-#variables to use the updated proxy certificate
+##variables to use the updated proxy certificate
 export ROLE=Analysis
 export X509_USER_PROXY=/var/tmp/${USER}.${ROLE}.proxy
 
-dir_scripts=$(dirname $(readlink -f $BASH_SOURCE))
-FILE_RECO_STAT=$dir_scripts/reco_status.txt
 
-#grid setup script
+DIR_SCRIPTS=$(dirname $(readlink -f $BASH_SOURCE))
+FILE_RECO_STAT=$DIR_SCRIPTS/reco_status.txt
+
+##grid setup script
 source /e906/app/software/script/setup-jobsub-spinquest.sh
 
 ##list out all the decoded runs and save the runid (by kenichi)
-mysql --defaults-file=/data2/e1039/resource/db_conf/my_db1.cnf     --batch --skip-column-names     --execute='select run_id from deco_status where deco_status = 2 order by run_id desc'     user_e1039_maindaq >$dir_scripts/list.txt
+mysql --defaults-file=/data2/e1039/resource/db_conf/my_db1.cnf     --batch --skip-column-names     --execute='select run_id from deco_status where deco_status = 2 order by run_id desc'     user_e1039_maindaq >$DIR_SCRIPTS/list.txt
 
-##find out the difference between the two list and copy it to pnfs/e1039/tape_backed/decoded_data area
-grep -vxf $dir_scripts/list_hold.txt $dir_scripts/list.txt >$dir_scripts/run_list.txt
+##find out the difference between the two lists and make a run list to run grid jobs 
+grep -vxf $DIR_SCRIPTS/list_hold.txt $DIR_SCRIPTS/list.txt >$DIR_SCRIPTS/run_list.txt
 
 ##Loop over new decoded data
 while read RunNum; do
   
-  run_dir=($(printf 'run_%06d' $RunNum) )
-  echo $run_dir
-  
+  RUN_DIR=($(printf 'run_%06d' $RunNum) )
+  echo $RUN_DIR
+
+  UNSPLIT_FILE=($(printf 'run_%06d_spin.root' $RunNum) ) 
+ 
   ##no. of splits in corresponding run
-  N_splits=$(ls /data2/e1039/dst/$run_dir/ | wc -l)
-  echo $N_splits
+  N_SPLITS=$(ls /data2/e1039/dst/$RUN_DIR/ | wc -l)
 
-  reco_status=0
+  echo $N_SPLITS
 
-  if [ $N_splits -gt 1 ]; then #choose the runs with more than 1 splits only
 
-    #copy the decoded data to tape_backed area
-    cp -ru /data2/e1039/dst/$run_dir /pnfs/e1039/tape_backed/decoded_data
+  RECO_STATUS=0
+  SUBMISSION_FREQ=0
 
-    #submit the grid job
-    $dir_scripts/gridsub_data.sh $run_dir 1 $RunNum 0 splitting
+  if [ $N_SPLITS -gt 1 ]; then #choose the runs with more than 1 splits only
 
-    reco_status=1    
+    ##copy the decoded data to scratch area
+    cp -ru /data2/e1039/dst/$RUN_DIR /pnfs/e1039/scratch/cosmic_decoded_data
+    
 
-  fi
+    ##submit the grid job
+    $DIR_SCRIPTS/gridsub_data.sh $RUN_DIR 1 $RunNum 0 splitting 
 
- paste <(echo "$RunNum") <(echo "$N_splits") <(echo "$reco_status")>>$FILE_RECO_STAT
+    RECO_STATUS=1    
+    SUBMISSION_FREQ=1
+  fi 
 
-done <$dir_scripts/run_list.txt
+ #echo $RunNum  $N_SPLITS $RECO_STATUS $SUBMISSION_FREQ
+ paste <(echo "$RunNum") <(echo "$N_SPLITS") <(echo "$RECO_STATUS") <(echo "$SUBMISSION_FREQ")>>$FILE_RECO_STAT
+
+done <$DIR_SCRIPTS/run_list.txt
 
 ##update the holding list
-cat $dir_scripts/run_list.txt >>$dir_scripts/list_hold.txt
+cat $DIR_SCRIPTS/run_list.txt >>$DIR_SCRIPTS/list_hold.txt
 

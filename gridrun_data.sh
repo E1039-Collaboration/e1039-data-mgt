@@ -1,4 +1,6 @@
 #!/bin/bash
+#Author: Abinash 
+#Script to run macro over grid node
 
 nevents=$1
 run_number=$2
@@ -25,13 +27,12 @@ fi
 echo "hello, grid." | tee out.txt $CONDOR_DIR_OUTPUT/out.txt
 echo "HOST = $HOSTNAME" | tee -a out.txt $CONDOR_DIR_OUTPUT/out.txt
 pwd | tee -a out.txt $CONDOR_DIR_OUTPUT/out.txt
-#ls -l $CONDOR_DIR_INPUT
+
 tar -xzvf $CONDOR_DIR_INPUT/input.tar.gz
 
 ln -s $CONDOR_DIR_INPUT/$data_file data.root 
 
-#ls -lh | tee -a out.txt $CONDOR_DIR_OUTPUT/out.txt
-
+E1039_CORE_VERSION=pr.128
 FN_SETUP=/e906/app/software/osg/software/e1039/this-e1039.sh
 if [ ! -e $FN_SETUP ] ; then # On grid
     FN_SETUP=/cvmfs/seaquest.opensciencegrid.org/seaquest/${FN_SETUP#/e906/app/software/osg/}
@@ -41,14 +42,14 @@ source $FN_SETUP
 
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 
-time root -b -q RecoE1039Data.C\($nevents\)
+time root -b -q RecoE1039Data.C\($nevents\,$run_number\)
 RET=$?
 if [ $RET -ne 0 ] ; then
     echo "Error in RecoE1039Data.C: $RET"
     exit $RET
 fi
 
-mv *.root $CONDOR_DIR_OUTPUT/
+mv *.root *.tsv $CONDOR_DIR_OUTPUT/
 
 echo "gridrun.sh finished!"
 echo "Following for recording status: data file and status (0 if success otherwise error)"
